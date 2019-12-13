@@ -1,6 +1,7 @@
 port module Main exposing (main)
 
 import Array exposing (Array)
+import Array.Extra as Array
 import Browser
 import Browser.Dom
 import Browser.Events
@@ -167,6 +168,7 @@ type Msg
     | CancelEdit
     | Edit String
     | Set
+    | AddRow Int
     | SaveToJs
     | None
 
@@ -241,6 +243,20 @@ update msg model =
                             | table = updateData selected (String model.input.text) model.table
                             , input = newInput
                         }
+
+        AddRow rowIndex ->
+            let
+                ( first, second ) =
+                    Array.splitAt rowIndex model.table
+
+                { col } =
+                    getTableSize model.table
+
+                newTable =
+                    Array.append (Array.push (Array.repeat col <| String "add") first) second
+            in
+            update SaveToJs
+                { model | table = newTable }
 
         SaveToJs ->
             ( model, saveTable <| tableToJson <| model.table )
