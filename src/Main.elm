@@ -403,12 +403,11 @@ view model =
 viewCsv : Table -> Html Msg
 viewCsv table =
     textarea
-        [ A.value <| toCsv table
-        , E.onInput EditCsv
+        [ E.onInput EditCsv
         , E.onFocus <| Select Csv
         , E.onBlur <| Select <| Cell <| CellRef 0 0
         ]
-        []
+        [ text <| toCsv table ]
 
 
 viewTable : Model -> Html Msg
