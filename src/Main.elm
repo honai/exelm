@@ -169,6 +169,7 @@ type Msg
     | Edit String
     | Set
     | AddRow Int
+    | AddCol Int
     | SaveToJs
     | None
 
@@ -253,10 +254,19 @@ update msg model =
                     getTableSize model.table
 
                 newTable =
-                    Array.append (Array.push (Array.repeat col <| String "add") first) second
+                    Array.append (Array.push (Array.repeat col <| String "") first) second
             in
             update SaveToJs
                 { model | table = newTable }
+
+        AddCol colIndex ->
+            let
+                mapFunc : Array Cell -> Array Cell
+                mapFunc row =
+                    Array.append (Array.push (String "") <| Array.sliceUntil colIndex row) (Array.sliceFrom colIndex row)
+            in
+            update SaveToJs
+                { model | table = Array.map mapFunc model.table }
 
         SaveToJs ->
             ( model, saveTable <| tableToJson <| model.table )
