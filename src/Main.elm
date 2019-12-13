@@ -42,6 +42,16 @@ type Cell
     | String String
 
 
+cellToString : Cell -> String
+cellToString cell =
+    case cell of
+        Float float ->
+            String.fromFloat float
+
+        String str ->
+            str
+
+
 type alias Table =
     Array (Array Cell)
 
@@ -340,8 +350,13 @@ subscriptions { input } =
 view : Model -> Browser.Document Msg
 view model =
     { title = "Excel"
-    , body = [ viewTable model ]
+    , body = [ viewTable model, viewTemp ]
     }
+
+
+viewTemp : Html Msg
+viewTemp =
+    div [] [ button [ E.onClick <| AddCol 1 ] [ text "Add col" ] ]
 
 
 viewTable : Model -> Html Msg
@@ -372,14 +387,6 @@ viewCell inputState row col cell =
 
             else
                 ""
-
-        cellText =
-            case cell of
-                Float num ->
-                    String.fromFloat num
-
-                String str ->
-                    str
     in
     if inputState.isEditing && isSelected then
         td [ A.class "selected" ]
@@ -398,9 +405,9 @@ viewCell inputState row col cell =
         td
             [ A.class selectedClass
             , E.onClick (Select cellRef)
-            , E.onDoubleClick (StartEdit (Just cellRef) cellText)
+            , E.onDoubleClick (StartEdit (Just cellRef) <| cellToString cell)
             ]
-            [ text cellText ]
+            [ text <| cellToString cell ]
 
 
 onEscapeKey : Attribute Msg
