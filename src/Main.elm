@@ -59,14 +59,43 @@ type alias Model =
     }
 
 
-init : String -> ( Model, Cmd Msg )
-init _ =
-    ( Model
-        (Array.repeat 10 (Array.fromList [ Float 1, String "aa" ]))
-        (CellRef 10 2)
-        (InputState (CellRef 0 0) False "")
-    , Cmd.none
-    )
+init : JE.Value -> ( Model, Cmd Msg )
+init data =
+    let
+        initTable =
+            Array.fromList <| List.map Array.fromList [ [ String "Name", String "Age" ], [ String "Bob", Float 18 ] ]
+
+        initSize =
+            CellRef 2 2
+
+        initInput =
+            InputState (CellRef 0 0) False ""
+    in
+    case JD.decodeValue (JD.array (JD.array jsonToCell)) data of
+        Ok table ->
+            ( Model table initSize initInput, Cmd.none )
+
+        Err error ->
+            ( Model initTable initSize initInput, Cmd.none )
+
+
+jsonToCell : JD.Decoder Cell
+jsonToCell =
+    JD.field "type" JD.string
+        |> JD.andThen toCell
+
+
+toCell : String -> JD.Decoder Cell
+toCell typeStr =
+    case typeStr of
+        "Float" ->
+            JD.map Float (JD.field "Float" JD.float)
+
+        "String" ->
+            JD.map String (JD.field "String" JD.string)
+
+        _ ->
+            JD.fail "operation JSON to Cell failed"
 
 
 
