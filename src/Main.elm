@@ -396,13 +396,19 @@ subscriptions { input } =
 view : Model -> Browser.Document Msg
 view model =
     { title = "Excel"
-    , body = [ viewTable model, viewTemp ]
+    , body = [ viewTable model, viewCsv model.table ]
     }
 
 
-viewTemp : Html Msg
-viewTemp =
-    div [] [ button [ E.onClick <| AddCol 1 ] [ text "Add col" ] ]
+viewCsv : Table -> Html Msg
+viewCsv table =
+    textarea
+        [ A.value <| toCsv table
+        , E.onInput EditCsv
+        , E.onFocus <| Select Csv
+        , E.onBlur <| Select <| Cell <| CellRef 0 0
+        ]
+        []
 
 
 viewTable : Model -> Html Msg
