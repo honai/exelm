@@ -66,6 +66,23 @@ getTableSize table =
             CellRef (Array.length table) 0
 
 
+toCsv : Table -> String
+toCsv table =
+    let
+        escapeDQ : Cell -> String
+        escapeDQ cell =
+            if String.contains "\"" <| cellToString cell then
+                "\"" ++ (String.replace "\"" "\"\"" <| cellToString cell) ++ "\""
+
+            else
+                cellToString cell
+
+        listTable =
+            Array.toList <| Array.map (Array.toList << Array.map escapeDQ) table
+    in
+    String.join "\n" <| List.map (String.join ",") listTable
+
+
 type alias InputState =
     { selected : CellRef
     , isEditing : Bool
