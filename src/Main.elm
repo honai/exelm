@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Array exposing (Array)
 import Browser
@@ -9,6 +9,7 @@ import Html.Attributes as A
 import Html.Events as E
 import Html.Lazy exposing (lazy3, lazy4)
 import Json.Decode as JD
+import Json.Encode as JE
 import Task
 
 
@@ -35,8 +36,13 @@ type alias CellRef =
     }
 
 
+type Cell
+    = Float Float
+    | String String
+
+
 type alias Table =
-    Array (Array Float)
+    Array (Array Cell)
 
 
 type alias InputState =
@@ -56,11 +62,33 @@ type alias Model =
 init : String -> ( Model, Cmd Msg )
 init _ =
     ( Model
-        (Array.repeat 10 (Array.fromList [ 1, 2 ]))
+        (Array.repeat 10 (Array.fromList [ Float 1, String "aa" ]))
         (CellRef 10 2)
         (InputState (CellRef 0 0) False "")
     , Cmd.none
     )
+
+
+
+-- PORT
+
+
+port saveTable : JE.Value -> Cmd msg
+
+
+tableToJson : Table -> JE.Value
+tableToJson table =
+    JE.array (JE.array cellToJson) table
+
+
+cellToJson : Cell -> JE.Value
+cellToJson cell =
+    case cell of
+        Float float ->
+            JE.object [ ( "type", JE.string "Float" ), ( "Float", JE.float float ) ]
+
+        String str ->
+            JE.object [ ( "type", JE.string "String" ), ( "String", JE.string str ) ]
 
 
 
@@ -101,6 +129,7 @@ type Msg
     | CancelEdit
     | Edit String
     | Set
+    | SaveToJs
     | None
 
 
@@ -145,30 +174,36 @@ update msg model =
             ( { model | input = newInput }, Cmd.none )
 
         Set ->
+            let
+                selected =
+                    model.input.selected
+
+                newInput =
+                    InputState selected False ""
+            in
             case String.toFloat model.input.text of
                 Just num ->
-                    let
-                        selected =
-                            model.input.selected
-
-                        newInput =
-                            InputState selected False ""
-                    in
-                    ( { model
-                        | table = updateData selected num model.table
-                        , input = newInput
-                      }
-                    , Cmd.none
-                    )
+                    update SaveToJs
+                        { model
+                            | table = updateData selected (Float num) model.table
+                            , input = newInput
+                        }
 
                 Nothing ->
-                    ( model, Cmd.none )
+                    update SaveToJs
+                        { model
+                            | table = updateData selected (String model.input.text) model.table
+                            , input = newInput
+                        }
+
+        SaveToJs ->
+            ( model, saveTable <| tableToJson <| model.table )
 
         None ->
             ( model, Cmd.none )
 
 
-updateData : CellRef -> Float -> Table -> Table
+updateData : CellRef -> Cell -> Table -> Table
 updateData { row, col } data table =
     case Array.get row table of
         Just rowArray ->
@@ -244,22 +279,13 @@ viewTable model =
         ]
 
 
-viewRow : InputState -> Int -> Array Float -> Html Msg
+viewRow : InputState -> Int -> Array Cell -> Html Msg
 viewRow inputState row data =
     tr []
-        (List.indexedMap (lazy4 viewCell inputState row) (Array.toList data) ++ [ funcCol data ])
+        (List.indexedMap (lazy4 viewCell inputState row) (Array.toList data))
 
 
-funcCol : Array Float -> Html Msg
-funcCol data =
-    let
-        product =
-            Array.foldl (+) 0 data
-    in
-    td [] [ text <| String.fromFloat <| product ]
-
-
-viewCell : InputState -> Int -> Int -> Float -> Html Msg
+viewCell : InputState -> Int -> Int -> Cell -> Html Msg
 viewCell inputState row col cell =
     let
         cellRef =
@@ -276,7 +302,12 @@ viewCell inputState row col cell =
                 ""
 
         cellText =
-            String.fromFloat cell
+            case cell of
+                Float num ->
+                    String.fromFloat num
+
+                String str ->
+                    str
     in
     if inputState.isEditing && isSelected then
         td [ A.class "selected" ]
