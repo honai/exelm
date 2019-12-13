@@ -5,6 +5,7 @@ import Array.Extra as Array
 import Browser
 import Browser.Dom
 import Browser.Events
+import Csv
 import Html exposing (..)
 import Html.Attributes as A
 import Html.Events as E
@@ -83,8 +84,24 @@ toCsv table =
     String.join "\n" <| List.map (String.join ",") listTable
 
 
+fromCsv : String -> Table
+fromCsv csvStr =
+    let
+        { headers, records } =
+            Csv.parse csvStr
+    in
+    Array.fromList <|
+        [ Array.fromList <| List.map String headers ]
+            ++ List.map (Array.fromList << List.map String) records
+
+
+type Select
+    = Cell CellRef
+    | Csv
+
+
 type alias InputState =
-    { selected : CellRef
+    { selected : Select
     , isEditing : Bool
     , text : String
     }
@@ -103,7 +120,7 @@ init data =
             Array.fromList <| List.map Array.fromList [ [ String "Name", String "Age" ], [ String "Bob", Float 18 ] ]
 
         initInput =
-            InputState (CellRef 0 0) False ""
+            InputState (Cell <| CellRef 0 0) False ""
     in
     case JD.decodeValue (JD.array (JD.array jsonToCell)) data of
         Ok table ->
@@ -189,11 +206,12 @@ moveCellRef move cellRef table =
 
 
 type Msg
-    = Select CellRef
+    = Select Select
     | Move Move
     | StartEdit (Maybe CellRef) String
     | CancelEdit
     | Edit String
+    | EditCsv String
     | Set
     | AddRow Int
     | AddCol Int
@@ -209,22 +227,31 @@ focusCellEditor =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Select cellRef ->
-            ( { model | input = InputState cellRef False "" }, Cmd.none )
+        Select select ->
+            case select of
+                Cell cellRef ->
+                    ( { model | input = InputState (Cell cellRef) False "" }, Cmd.none )
+
+                Csv ->
+                    ( { model | input = InputState Csv True "" }, Cmd.none )
 
         Move move ->
-            ( { model
-                | input =
-                    InputState
-                        (moveCellRef move model.input.selected model.table)
-                        False
-                        ""
-              }
-            , Cmd.none
-            )
+            case model.input.selected of
+                Cell cellRef ->
+                    let
+                        oldInput =
+                            model.input
+
+                        newInput =
+                            { oldInput | selected = Cell <| moveCellRef move cellRef model.table }
+                    in
+                    ( { model | input = newInput }, Cmd.none )
+
+                Csv ->
+                    ( model, Cmd.none )
 
         StartEdit (Just cellRef) text ->
-            ( { model | input = InputState cellRef True text }, focusCellEditor )
+            ( { model | input = InputState (Cell cellRef) True text }, focusCellEditor )
 
         StartEdit Nothing text ->
             ( { model | input = InputState model.input.selected True text }, focusCellEditor )
@@ -249,28 +276,30 @@ update msg model =
             in
             ( { model | input = newInput }, Cmd.none )
 
+        EditCsv csvStr ->
+            update SaveToJs
+                { model | table = fromCsv csvStr }
+
         Set ->
-            let
-                selected =
-                    model.input.selected
+            case model.input.selected of
+                Cell cellRef ->
+                    case String.toFloat model.input.text of
+                        Just num ->
+                            update SaveToJs
+                                { model
+                                    | table = updateData cellRef (Float num) model.table
+                                    , input = InputState (Cell cellRef) False ""
+                                }
 
-                newInput =
-                    InputState selected False ""
-            in
-            case String.toFloat model.input.text of
-                Just num ->
-                    update SaveToJs
-                        { model
-                            | table = updateData selected (Float num) model.table
-                            , input = newInput
-                        }
+                        Nothing ->
+                            update SaveToJs
+                                { model
+                                    | table = updateData cellRef (String model.input.text) model.table
+                                    , input = InputState (Cell cellRef) False ""
+                                }
 
-                Nothing ->
-                    update SaveToJs
-                        { model
-                            | table = updateData selected (String model.input.text) model.table
-                            , input = newInput
-                        }
+                Csv ->
+                    ( model, Cmd.none )
 
         AddRow rowIndex ->
             let
@@ -396,7 +425,7 @@ viewCell inputState row col cell =
             CellRef row col
 
         isSelected =
-            inputState.selected == cellRef
+            inputState.selected == Cell cellRef
 
         selectedClass =
             if isSelected then
@@ -421,7 +450,7 @@ viewCell inputState row col cell =
     else
         td
             [ A.class selectedClass
-            , E.onClick (Select cellRef)
+            , E.onClick (Select <| Cell cellRef)
             , E.onDoubleClick (StartEdit (Just cellRef) <| cellToString cell)
             ]
             [ text <| cellToString cell ]
