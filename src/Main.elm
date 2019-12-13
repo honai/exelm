@@ -54,7 +54,6 @@ type alias InputState =
 
 type alias Model =
     { table : Table
-    , tableSize : CellRef
     , input : InputState
     }
 
@@ -65,18 +64,15 @@ init data =
         initTable =
             Array.fromList <| List.map Array.fromList [ [ String "Name", String "Age" ], [ String "Bob", Float 18 ] ]
 
-        initSize =
-            CellRef 2 2
-
         initInput =
             InputState (CellRef 0 0) False ""
     in
     case JD.decodeValue (JD.array (JD.array jsonToCell)) data of
         Ok table ->
-            ( Model table initSize initInput, Cmd.none )
+            ( Model table initInput, Cmd.none )
 
-        Err error ->
-            ( Model initTable initSize initInput, Cmd.none )
+        Err _ ->
+            ( Model initTable initInput, Cmd.none )
 
 
 jsonToCell : JD.Decoder Cell
@@ -131,11 +127,24 @@ type Move
     | Right
 
 
-moveCellRef : Move -> CellRef -> CellRef -> CellRef
-moveCellRef move cellRef size =
+getTableSize : Table -> CellRef
+getTableSize table =
+    case Array.get 0 table of
+        Just firstRow ->
+            CellRef (Array.length table) (Array.length firstRow)
+
+        Nothing ->
+            CellRef (Array.length table) 0
+
+
+moveCellRef : Move -> CellRef -> Table -> CellRef
+moveCellRef move cellRef table =
     let
         { row, col } =
             cellRef
+
+        size =
+            getTableSize table
     in
     case move of
         Up ->
@@ -174,7 +183,15 @@ update msg model =
             ( { model | input = InputState cellRef False "" }, Cmd.none )
 
         Move move ->
-            ( { model | input = InputState (moveCellRef move model.input.selected model.tableSize) False "" }, Cmd.none )
+            ( { model
+                | input =
+                    InputState
+                        (moveCellRef move model.input.selected model.table)
+                        False
+                        ""
+              }
+            , Cmd.none
+            )
 
         StartEdit (Just cellRef) text ->
             ( { model | input = InputState cellRef True text }, focusCellEditor )
