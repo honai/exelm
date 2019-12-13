@@ -46,6 +46,16 @@ type alias Table =
     Array (Array Cell)
 
 
+getTableSize : Table -> CellRef
+getTableSize table =
+    case Array.get 0 table of
+        Just firstRow ->
+            CellRef (Array.length table) (Array.length firstRow)
+
+        Nothing ->
+            CellRef (Array.length table) 0
+
+
 type alias InputState =
     { selected : CellRef
     , isEditing : Bool
@@ -126,16 +136,6 @@ type Move
     | Down
     | Left
     | Right
-
-
-getTableSize : Table -> CellRef
-getTableSize table =
-    case Array.get 0 table of
-        Just firstRow ->
-            CellRef (Array.length table) (Array.length firstRow)
-
-        Nothing ->
-            CellRef (Array.length table) 0
 
 
 moveCellRef : Move -> CellRef -> Table -> CellRef
