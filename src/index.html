@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>ExcElm</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
     * {
       box-sizing: border-box;
@@ -11,46 +12,135 @@
     html {
       font-family: sans-serif;
     }
-    body {
+    body, h1, h2, h3 {
       margin: 0;
     }
     header {
       height: 36px;
+      font-size: 18px;
+      line-height: 2;
+      background-color: #02545a;
+      color: #ffffff;
+      padding: 0 10px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+      position: fixed;
+      width: 100%;
+      z-index: 50;
     }
     .wrap {
-      height: calc(100vh - 36px);
+      height: 100vh;
+      padding-top: 36px;
       width: 100vw;
       display: flex;
     }
     .table-wrap {
       flex: 0 0 80%;
       overflow: auto;
+      position: relative;
     }
-    .csv-wrap {
-      flex: 1 1 auto;
-      padding: 5px;
+    .table-wrap > .mask {
+      background-color: #fff;
+      position: fixed;
     }
-    textarea {
-      margin: 0;
+    .table-wrap > .mask.-col {
+      height: 100%;
+      width: 30px;
+    }
+    .table-wrap > .mask.-row {
       width: 100%;
+      height: 30px;
+    }
+    .other-wrap {
+      flex: 1 1 auto;
+      padding: 10px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+    .csv-editor {
+      display: flex;
+      flex-flow: column nowrap;
       height: 100%;
     }
-    table {
+    .csv-editor > .title {
+      font-weight: normal;
+      font-size: 1.25rem;
+      padding-bottom: 5px;
+    }
+    .csv-editor > .editor {
+      resize: none;
+      margin: 0;
+      width: 100%;
+      flex: 1 1 auto;
+      font-size: 1rem;
+    }
+    .table-editor {
       border-collapse: collapse;
       table-layout: fixed;
       width: max-content;
+      margin: 30px;
     }
-    td {
-      border: 1px solid rgba(0, 0, 0, 0.5);
+    .col-header-cell, .row-header-cell {
+      background-color: #ccc;
+      font-weight: normal;
+      padding: 5px;
     }
-    .selected {
+    .col-header-cell {
+      position: sticky;
+      top: 30px;
+    }
+    .row-header-cell {
+      position: sticky;
+      left: 30px;
+    }
+    .col-header-cell > .inner,
+    .row-header-cell > .inner {
+      display: inline-block;
+      text-align: center;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .col-operate-buttons, .row-operate-buttons {
+      position: absolute;
+    }
+    .col-operate-buttons {
+      width: 100%;
+      left: 0;
+      display: flex;
+      justify-content: space-between;
+      top: -30px;
+    }
+    .row-operate-buttons {
+      display: flex;
+      flex-flow: column nowrap;
+      height: 80px;
+      justify-content: space-between;
+      top: calc(50% - 40px);
+      left: -30px;
+    }
+    .col-operate-buttons > button,
+    .row-operate-buttons > button {
+      padding: 0;
+      border: none;
+      display: inline-block;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    }
+    .data-row > .cell {
+      border: 1px solid #bbb;
+      padding: 5px;
+      min-width: 100px;
+    }
+    .data-row > .cell.-selected {
       border: 3px solid red;
+      padding: 3px;
     }
   </style>
 </head>
 <body>
-<header><h1>Simple Table Editor</h1></header>
-<main><div id="main">Loading...</div></main>
+<header>ExcElm</header>
+<div id="main">Loading...</div>
 <script src="main.js"></script>
 </body>
 </html>

@@ -20,7 +20,7 @@ import Task
 
 
 main =
-    Browser.document
+    Browser.element
         { init = init
         , update = update
         , subscriptions = subscriptions
@@ -393,33 +393,40 @@ subscriptions { input } =
 -- VIEW
 
 
-view : Model -> Browser.Document Msg
+view : Model -> Html Msg
 view model =
-    { title = "Excel"
-    , body =
-        [ div [ A.class "wrap" ]
-            [ div [ A.class "table-wrap" ] [ viewTable model ]
-            , div [ A.class "csv-wrap" ] [ viewCsv model.table ]
-            ]
+    div [ A.class "wrap" ]
+        [ div [ A.class "table-wrap", A.id "test" ]
+            [ div [ A.class "mask -row" ] [], div [ A.class "mask -col" ] [], viewTable model ]
+        , div [ A.class "other-wrap" ]
+            [ viewCsv model.table ]
         ]
-    }
 
 
 viewCsv : Table -> Html Msg
 viewCsv table =
-    textarea
-        [ E.onInput EditCsv
-        , E.onFocus <| Select Csv
-        , E.onBlur <| Select <| Cell <| CellRef 0 0
+    div [ A.class "csv-editor" ]
+        [ h2 [ A.class "title" ] [ text "CSV" ]
+        , textarea
+            [ A.class "editor"
+            , E.onInput EditCsv
+            , E.onFocus <| Select Csv
+            , E.onBlur <| Select <| Cell <| CellRef 0 0
+            ]
+            [ text <| toCsv table ]
         ]
-        [ text <| toCsv table ]
 
 
 viewTable : Model -> Html Msg
 viewTable model =
-    table [] <|
+    table [ A.class "table-editor" ] <|
         viewColHeader (.col <| getTableSize model.table) model.input
             :: List.indexedMap (lazy3 viewRow model.input) (Array.toList model.table)
+
+
+materialIcon : String -> Html Msg
+materialIcon iconName =
+    i [ A.class "material-icons" ] [ text iconName ]
 
 
 viewColHeader : Int -> InputState -> Html Msg
@@ -450,24 +457,26 @@ viewColHeader colSize input =
 
         buttons : Html Msg
         buttons =
-            span []
-                [ button [ E.onClick <| AddCol selectedCol ] [ text "挿入" ]
-                , button [] [ text "削除" ]
-                , button [ E.onClick <| AddCol <| selectedCol + 1 ] [ text "挿入" ]
+            span [ A.class "col-operate-buttons" ]
+                [ button [ E.onClick <| AddCol selectedCol ] [ materialIcon "add" ]
+                , button [] [ materialIcon "delete" ]
+                , button [ E.onClick <| AddCol <| selectedCol + 1 ] [ materialIcon "add" ]
                 ]
 
         headerCell : Int -> Html Msg
         headerCell col =
-            td [] <|
-                (if col == selectedCol then
-                    buttons
+            td [ A.class "col-header-cell" ]
+                [ span [ A.class "inner" ]
+                    [ if col == selectedCol then
+                        buttons
 
-                 else
-                    text ""
-                )
-                    :: [ span [] [ text <| rowIndexToAlphabet col ] ]
+                      else
+                        text ""
+                    , span [] [ text <| rowIndexToAlphabet col ]
+                    ]
+                ]
     in
-    tr [] <|
+    tr [ A.class "col-header" ] <|
         td [] []
             :: List.map
                 headerCell
@@ -476,10 +485,10 @@ viewColHeader colSize input =
 
 rowOperationButtons : Int -> Html Msg
 rowOperationButtons row =
-    span []
-        [ button [ E.onClick <| AddRow row ] [ text "挿入" ]
-        , button [] [ text "削除" ]
-        , button [ E.onClick <| AddRow <| row + 1 ] [ text "挿入" ]
+    span [ A.class "row-operate-buttons" ]
+        [ button [ E.onClick <| AddRow row ] [ materialIcon "add" ]
+        , button [] [ materialIcon "delete" ]
+        , button [ E.onClick <| AddRow <| row + 1 ] [ materialIcon "add" ]
         ]
 
 
@@ -494,14 +503,16 @@ viewRow inputState row data =
                 _ ->
                     -1
     in
-    tr [] <|
-        td []
-            [ if row == selectedRow then
-                rowOperationButtons selectedRow
+    tr [ A.class "data-row" ] <|
+        th [ A.class "row-header-cell" ]
+            [ span [ A.class "inner" ]
+                [ if row == selectedRow then
+                    rowOperationButtons selectedRow
 
-              else
-                text ""
-            , span [] [ text <| String.fromInt <| row + 1 ]
+                  else
+                    text ""
+                , span [] [ text <| String.fromInt <| row + 1 ]
+                ]
             ]
             :: List.indexedMap (lazy4 viewCell inputState row) (Array.toList data)
 
@@ -514,16 +525,9 @@ viewCell inputState row col cell =
 
         isSelected =
             inputState.selected == Cell cellRef
-
-        selectedClass =
-            if isSelected then
-                "selected"
-
-            else
-                ""
     in
     if inputState.isEditing && isSelected then
-        td [ A.class "selected" ]
+        td [ A.class "cell", A.class "-selected" ]
             [ form [ E.onSubmit Set ]
                 [ input
                     [ A.id "cell-input"
@@ -537,7 +541,13 @@ viewCell inputState row col cell =
 
     else
         td
-            [ A.class selectedClass
+            [ A.class "cell"
+            , A.class <|
+                if isSelected then
+                    "-selected"
+
+                else
+                    ""
             , E.onClick (Select <| Cell cellRef)
             , E.onDoubleClick (StartEdit (Just cellRef) <| cellToString cell)
             ]
