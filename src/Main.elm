@@ -215,6 +215,8 @@ type Msg
     | Set
     | AddRow Int
     | AddCol Int
+    | DeleteRow Int
+    | DeleteCol Int
     | SaveToJs
     | None
 
@@ -323,6 +325,14 @@ update msg model =
             in
             update SaveToJs
                 { model | table = Array.map mapFunc model.table }
+
+        DeleteRow rowIndex ->
+            update SaveToJs
+                { model | table = Array.removeAt rowIndex model.table }
+
+        DeleteCol colIndex ->
+            update SaveToJs
+                { model | table = Array.map (Array.removeAt colIndex) model.table }
 
         SaveToJs ->
             ( model, saveTable <| tableToJson <| model.table )
@@ -459,7 +469,7 @@ viewColHeader colSize input =
         buttons =
             span [ A.class "col-operate-buttons" ]
                 [ button [ E.onClick <| AddCol selectedCol ] [ materialIcon "add" ]
-                , button [] [ materialIcon "delete" ]
+                , button [ E.onClick <| DeleteCol selectedCol ] [ materialIcon "delete" ]
                 , button [ E.onClick <| AddCol <| selectedCol + 1 ] [ materialIcon "add" ]
                 ]
 
@@ -487,7 +497,7 @@ rowOperationButtons : Int -> Html Msg
 rowOperationButtons row =
     span [ A.class "row-operate-buttons" ]
         [ button [ E.onClick <| AddRow row ] [ materialIcon "add" ]
-        , button [] [ materialIcon "delete" ]
+        , button [ E.onClick <| DeleteRow row ] [ materialIcon "delete" ]
         , button [ E.onClick <| AddRow <| row + 1 ] [ materialIcon "add" ]
         ]
 
