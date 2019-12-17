@@ -89,10 +89,19 @@ fromCsv csvStr =
     let
         { headers, records } =
             Csv.parse csvStr
+
+        stringToCell : String -> Cell
+        stringToCell str =
+            case String.toFloat str of
+                Just float ->
+                    Float float
+
+                Nothing ->
+                    String str
     in
     Array.fromList <|
-        [ Array.fromList <| List.map String headers ]
-            ++ List.map (Array.fromList << List.map String) records
+        [ Array.fromList <| List.map stringToCell headers ]
+            ++ List.map (Array.fromList << List.map stringToCell) records
 
 
 type Select
