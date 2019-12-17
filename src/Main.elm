@@ -396,7 +396,12 @@ subscriptions { input } =
 view : Model -> Browser.Document Msg
 view model =
     { title = "Excel"
-    , body = [ viewTable model, viewCsv model.table ]
+    , body =
+        [ div [ A.class "wrap" ]
+            [ div [ A.class "table-wrap" ] [ viewTable model ]
+            , div [ A.class "csv-wrap" ] [ viewCsv model.table ]
+            ]
+        ]
     }
 
 
@@ -412,15 +417,93 @@ viewCsv table =
 
 viewTable : Model -> Html Msg
 viewTable model =
-    table []
-        [ tbody [] (List.indexedMap (lazy3 viewRow model.input) (Array.toList model.table))
+    table [] <|
+        viewColHeader (.col <| getTableSize model.table) model.input
+            :: List.indexedMap (lazy3 viewRow model.input) (Array.toList model.table)
+
+
+viewColHeader : Int -> InputState -> Html Msg
+viewColHeader colSize input =
+    let
+        rowIndexToAlphabet : Int -> String
+        rowIndexToAlphabet index =
+            let
+                codeOfA =
+                    Char.toCode 'A'
+
+                rightString =
+                    String.fromChar <| Char.fromCode <| codeOfA + modBy 26 index
+            in
+            if index < 26 then
+                rightString
+
+            else
+                (rowIndexToAlphabet <| index // 26 - 1) ++ rightString
+
+        selectedCol =
+            case input.selected of
+                Cell { col } ->
+                    col
+
+                _ ->
+                    -1
+
+        buttons : Html Msg
+        buttons =
+            span []
+                [ button [ E.onClick <| AddCol selectedCol ] [ text "挿入" ]
+                , button [] [ text "削除" ]
+                , button [ E.onClick <| AddCol <| selectedCol + 1 ] [ text "挿入" ]
+                ]
+
+        headerCell : Int -> Html Msg
+        headerCell col =
+            td [] <|
+                (if col == selectedCol then
+                    buttons
+
+                 else
+                    text ""
+                )
+                    :: [ span [] [ text <| rowIndexToAlphabet col ] ]
+    in
+    tr [] <|
+        td [] []
+            :: List.map
+                headerCell
+                (List.range 0 (colSize - 1))
+
+
+rowOperationButtons : Int -> Html Msg
+rowOperationButtons row =
+    span []
+        [ button [ E.onClick <| AddRow row ] [ text "挿入" ]
+        , button [] [ text "削除" ]
+        , button [ E.onClick <| AddRow <| row + 1 ] [ text "挿入" ]
         ]
 
 
 viewRow : InputState -> Int -> Array Cell -> Html Msg
 viewRow inputState row data =
-    tr []
-        (List.indexedMap (lazy4 viewCell inputState row) (Array.toList data))
+    let
+        selectedRow =
+            case inputState.selected of
+                Cell ref ->
+                    ref.row
+
+                _ ->
+                    -1
+    in
+    tr [] <|
+        td []
+            [ if row == selectedRow then
+                rowOperationButtons selectedRow
+
+              else
+                text ""
+            , span [] [ text <| String.fromInt <| row + 1 ]
+            ]
+            :: List.indexedMap (lazy4 viewCell inputState row) (Array.toList data)
 
 
 viewCell : InputState -> Int -> Int -> Cell -> Html Msg
