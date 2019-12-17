@@ -39,17 +39,17 @@ type alias CellRef =
 
 
 type Cell
-    = Float Float
-    | String String
+    = FloatCell Float
+    | StringCell String
 
 
 cellToString : Cell -> String
 cellToString cell =
     case cell of
-        Float float ->
+        FloatCell float ->
             String.fromFloat float
 
-        String str ->
+        StringCell str ->
             str
 
 
@@ -94,10 +94,10 @@ fromCsv csvStr =
         stringToCell str =
             case String.toFloat str of
                 Just float ->
-                    Float float
+                    FloatCell float
 
                 Nothing ->
-                    String str
+                    StringCell str
     in
     Array.fromList <|
         [ Array.fromList <| List.map stringToCell headers ]
@@ -126,7 +126,7 @@ init : JE.Value -> ( Model, Cmd Msg )
 init data =
     let
         initTable =
-            Array.fromList <| List.map Array.fromList [ [ String "Name", String "Age" ], [ String "Bob", Float 18 ] ]
+            Array.fromList <| List.map Array.fromList [ [ StringCell "Name", StringCell "Age" ], [ StringCell "Bob", FloatCell 18 ] ]
 
         initInput =
             InputState (Cell <| CellRef 0 0) False ""
@@ -149,10 +149,10 @@ toCell : String -> JD.Decoder Cell
 toCell typeStr =
     case typeStr of
         "Float" ->
-            JD.map Float (JD.field "Float" JD.float)
+            JD.map FloatCell (JD.field "Float" JD.float)
 
         "String" ->
-            JD.map String (JD.field "String" JD.string)
+            JD.map StringCell (JD.field "String" JD.string)
 
         _ ->
             JD.fail "operation JSON to Cell failed"
@@ -173,10 +173,10 @@ tableToJson table =
 cellToJson : Cell -> JE.Value
 cellToJson cell =
     case cell of
-        Float float ->
+        FloatCell float ->
             JE.object [ ( "type", JE.string "Float" ), ( "Float", JE.float float ) ]
 
-        String str ->
+        StringCell str ->
             JE.object [ ( "type", JE.string "String" ), ( "String", JE.string str ) ]
 
 
@@ -298,14 +298,14 @@ update msg model =
                         Just num ->
                             update SaveToJs
                                 { model
-                                    | table = updateData cellRef (Float num) model.table
+                                    | table = updateData cellRef (FloatCell num) model.table
                                     , input = InputState (Cell cellRef) False ""
                                 }
 
                         Nothing ->
                             update SaveToJs
                                 { model
-                                    | table = updateData cellRef (String model.input.text) model.table
+                                    | table = updateData cellRef (StringCell model.input.text) model.table
                                     , input = InputState (Cell cellRef) False ""
                                 }
 
@@ -321,7 +321,7 @@ update msg model =
                     getTableSize model.table
 
                 newTable =
-                    Array.append (Array.push (Array.repeat col <| String "") first) second
+                    Array.append (Array.push (Array.repeat col <| StringCell "") first) second
             in
             update SaveToJs
                 { model | table = newTable }
@@ -330,7 +330,7 @@ update msg model =
             let
                 mapFunc : Array Cell -> Array Cell
                 mapFunc row =
-                    Array.append (Array.push (String "") <| Array.sliceUntil colIndex row) (Array.sliceFrom colIndex row)
+                    Array.append (Array.push (StringCell "") <| Array.sliceUntil colIndex row) (Array.sliceFrom colIndex row)
             in
             update SaveToJs
                 { model | table = Array.map mapFunc model.table }
