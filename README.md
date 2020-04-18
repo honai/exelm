@@ -1,16 +1,5 @@
-# Elm Webpack Template
+# ExcElm
 
-Do more than `elm reactor`, with the power of webpack.
+Simple CSV editor written in Elm.
 
-This template comes with very simple webpack configuration
-to start writing Elm app.
-
-## Usage
-
-### `yarn dev`
-
-Start live reload development server.
-
-### `yarn build`
-
-Build for production.  Built code will placed in `dist` directory.
+[ElmでミニExcelをつくろう - Qiita](https://qiita.com/honai/items/061b024839f1d174436e)
