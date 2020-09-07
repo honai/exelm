@@ -1,6 +1,4 @@
-require('./index.html')
-
-const Elm = require('./Main.elm').Elm
+import { Elm } from './Main.elm'
 
 const storageKey = '0.1'
 
